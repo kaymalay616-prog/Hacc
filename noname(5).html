@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Login Form - Google Sheets + JavaScript</title>
+</head>
+<body>
+    <h1>🔐 Login Form</h1>
+    <p>Google Sheets + JavaScript ဖြင့် ပြုလုပ်ထားသော Login System</p>
+    
+    <div id="loginBox">
+        <h2>အကောင့်ဝင်ရန်</h2>
+        
+        <label>Username:</label><br>
+        <input type="text" id="username" placeholder="သင့် username ထည့်ပါ"><br><br>
+        
+        <label>Password:</label><br>
+        <input type="password" id="password" placeholder="စကားဝှက်ထည့်ပါ"><br><br>
+        
+        <button onclick="doLogin()">Login ဝင်မည်</button>
+        <button onclick="showRegister()">အကောင့်မရှိသေးဘူး?</button>
+        
+        <div id="message"></div>
+    </div>
+    
+    <div id="registerBox" style="display:none;">
+        <h2>အကောင့်အသစ်ဖွင့်ရန်</h2>
+        
+        <label>Username:</label><br>
+        <input type="text" id="regUsername" placeholder="သုံးမည့် username"><br><br>
+        
+        <label>Password:</label><br>
+        <input type="password" id="regPassword" placeholder="စကားဝှက်"><br><br>
+        
+        <label>အမည်:</label><br>
+        <input type="text" id="regFullname" placeholder="သင့်အမည်"><br><br>
+        
+        <button onclick="doRegister()">မှတ်ပုံတင်မည်</button>
+        <button onclick="showLogin()">နောက်သို့</button>
+        
+        <div id="regMessage"></div>
+    </div>
+    
+    <div id="welcomeBox" style="display:none;">
+        <h2>✅ အောင်မြင်စွာ ဝင်ရောက်ပြီးပါပြီ</h2>
+        <p id="welcomeText"></p>
+        <button onclick="logout()">ထွက်မည်</button>
+    </div>
+    
+    <script>
+        // Google Apps Script URL (ကိုယ်ရတဲ့ URL ထည့်)
+        const SCRIPT_URL = "https://sheetdb.io/api/v1/yjypmiqsjieg7";
+        
+        function doLogin() {
+            let username = document.getElementById("username").value;
+            let password = document.getElementById("password").value;
+            let messageDiv = document.getElementById("message");
+            
+            if(!username || !password) {
+                messageDiv.innerHTML = "<p style='color:red'>Username နှင့် Password ဖြည့်ပါ</p>";
+                return;
+            }
+            
+            messageDiv.innerHTML = "<p>စစ်ဆေးနေပါသည်...</p>";
+            
+            fetch(`${SCRIPT_URL}?action=login&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if(data.success) {
+                        // Login အောင်ပါပြီ
+                        document.getElementById("loginBox").style.display = "none";
+                        document.getElementById("welcomeBox").style.display = "block";
+                        document.getElementById("welcomeText").innerHTML = `မင်္ဂလာပါ ${data.fullname || username} ခင်ဗျာ။ <br> အကောင့်ဝင်ခြင်း အောင်မြင်ပါသည်။`;
+                        
+                        // LocalStorage မှာ save ထားမယ်
+                        localStorage.setItem("loggedInUser", username);
+                    } else {
+                        messageDiv.innerHTML = `<p style='color:red'>${data.message}</p>`;
+                    }
+                })
+                .catch(error => {
+                    messageDiv.innerHTML = `<p style='color:red'>Connection error: ${error.message}</p>`;
+                });
+        }
+        
+        function doRegister() {
+            let username = document.getElementById("regUsername").value;
+            let password = document.getElementById("regPassword").value;
+            let fullname = document.getElementById("regFullname").value;
+            let messageDiv = document.getElementById("regMessage");
+            
+            if(!username || !password) {
+                messageDiv.innerHTML = "<p style='color:red'>Username နှင့် Password ဖြည့်ရန်လိုပါသည်</p>";
+                return;
+            }
+            
+            messageDiv.innerHTML = "<p>အကောင့်ဖွင့်နေပါသည်...</p>";
+            
+            fetch(`${SCRIPT_URL}?action=register&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&fullname=${encodeURIComponent(fullname)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if(data.success) {
+                        messageDiv.innerHTML = `<p style='color:green'>${data.message}</p>`;
+                        setTimeout(() => {
+                            showLogin();
+                            document.getElementById("username").value = username;
+                        }, 2000);
+                    } else {
+                        messageDiv.innerHTML = `<p style='color:red'>${data.message}</p>`;
+                    }
+                })
+                .catch(error => {
+                    messageDiv.innerHTML = `<p style='color:red'>Error: ${error.message}</p>`;
+                });
+        }
+        
+        function showRegister() {
+            document.getElementById("loginBox").style.display = "none";
+            document.getElementById("registerBox").style.display = "block";
+            document.getElementById("message").innerHTML = "";
+        }
+        
+        function showLogin() {
+            document.getElementById("registerBox").style.display = "none";
+            document.getElementById("loginBox").style.display = "block";
+            document.getElementById("regMessage").innerHTML = "";
+        }
+        
+        function logout() {
+            document.getElementById("welcomeBox").style.display = "none";
+            document.getElementById("loginBox").style.display = "block";
+            document.getElementById("username").value = "";
+            document.getElementById("password").value = "";
+            localStorage.removeItem("loggedInUser");
+        }
+        
+        // စာမျက်နှာဖွင့်တာနဲ့ အရင် login လုပ်ထားရင် ပြန်ပြမယ်
+        window.onload = function() {
+            let loggedInUser = localStorage.getItem("loggedInUser");
+            if(loggedInUser) {
+                document.getElementById("loginBox").style.display = "none";
+                document.getElementById("welcomeBox").style.display = "block";
+                document.getElementById("welcomeText").innerHTML = `မင်္ဂလာပါ ${loggedInUser} ခင်ဗျာ။ <br> ပြန်လည်ကြိုဆိုပါသည်။`;
+            }
+        };
+    </script>
+</body>
+</html>
